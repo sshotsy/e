@@ -1,0 +1,85 @@
+local DataStoreService = game:GetService("DataStoreService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+
+local admins = {
+	["265799417"] = "Noitesed",
+	["1348408922"] = "foreverbxca",
+}
+
+local BANNED_USERIDS_KEY = "BannedUserIDs"
+local bannedUserIdsDataStore = DataStoreService:GetDataStore(BANNED_USERIDS_KEY)
+
+local webhookUrl = "https://hooks.hyra.io/api/webhooks/1143613243714187317/zteUtXK9i48RsaMv4qci_DoPD9BLipew6r3qnl_e13cognlTNcAU7KSmmvOg0utDTPMq"
+local httpService = game:GetService("HttpService")
+
+local remoteEvent = ReplicatedStorage:WaitForChild("UnbanUserEvent")
+
+local function loadBannedUserIds()
+	local success, storedBannedUserIds = pcall(function()
+		return bannedUserIdsDataStore:GetAsync(BANNED_USERIDS_KEY)
+	end)
+
+	if success and storedBannedUserIds then
+		return storedBannedUserIds
+	else
+		print("Failed to load banned UserIDs from DataStore.")
+		return {}
+	end
+end
+
+local function saveBannedUserIds(bannedUserIds)
+	local success, error = pcall(function()
+		bannedUserIdsDataStore:UpdateAsync(BANNED_USERIDS_KEY, function(oldData)
+			return bannedUserIds
+		end)
+	end)
+
+	if not success then
+		print("Failed to save banned UserIDs to DataStore:", error)
+	end
+end
+
+
+local function unbanUser(player, userId)
+	local bannedUserIds = loadBannedUserIds()
+	bannedUserIds[tostring(userId)] = nil
+	saveBannedUserIds(bannedUserIds)
+	print("User with UserID " .. userId .. " has been unbanned.")
+
+	local data = {
+		embeds = {
+			{
+				title = userId .. " has been unbanned!",
+				description = "Player Unbanned",
+				color = 65280,
+				fields = {
+					{
+						name = "Admin Name:",
+						value = admins[tostring(player.UserId)],
+						inline = true
+					},
+					{
+						name = "User ID:",
+						value = userId,
+						inline = true
+					}
+				}
+			}
+		}
+	}
+
+	local jsonData = httpService:JSONEncode(data)
+	httpService:PostAsync(webhookUrl, jsonData)
+end
+
+remoteEvent.OnServerEvent:Connect(function(player, userId)
+
+	if type(userId) == "number" then
+		unbanUser(player, userId)
+	else
+		print("Invalid UserID entered.")
+	end
+end)
+
+loadBannedUserIds()
