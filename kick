@@ -1,0 +1,54 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local remoteEvent = ReplicatedStorage:WaitForChild("KickUserEvent")
+local adminUserIds = {
+	265799417,
+	1348408922,
+}
+
+remoteEvent.OnServerEvent:Connect(function(adminPlayer, userId, reason)
+	local adminName = adminPlayer.Name
+	local kickedPlayer = Players:GetPlayerByUserId(userId)
+
+	if not kickedPlayer then
+		print("Player doesn't exist in game..")
+		return
+	end
+
+	kickedPlayer:Kick(reason)
+
+	local url = "https://hooks.hyra.io/api/webhooks/1143613478821695568/yaKhu9K1fymmReTnR7HV0nrJRBmymtP9ZShqdmRIuOAJuT_Pm32-amSY--5NYg5FTk5P"
+
+	local data = {
+		embeds = {
+			{
+				title = userId .. " Has been Kicked!",
+				description = "Player Kicked, what a noob lol",
+				color = 82888,
+				url = "https://www.roblox.com/users/" .. userId .. "/profile",
+				fields = {
+					{
+						name = "Admin Name:",
+						value = adminName,
+						inline = true
+					},
+					{
+						name = "Reason:",
+						value = reason,
+						inline = true
+					},
+					{
+						name = "User ID:",
+						value = userId,
+						inline = true
+					}
+				}
+			}
+		}
+	}
+
+	local finalData = HttpService:JSONEncode(data)
+	HttpService:PostAsync(url, finalData)
+end)
