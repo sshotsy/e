@@ -1,0 +1,47 @@
+local swinging = false
+local Myhuman = nil
+
+function Equipped()
+	Myhuman = script.Parent:FindFirstAncestor("Humanoid")
+	while Myhuman == nil do
+		Myhuman = script.Parent.Parent:FindFirstChild("Humanoid")
+		wait()
+	end
+end
+
+function TiltHandle()
+	local originalRotation = script.Parent.Handle.Rotation
+	local tiltAmount = Vector3.new(0, 20, 0)
+	script.Parent.Handle.Rotation = originalRotation + tiltAmount
+	wait(0.05)  -- Adjust the delay as needed
+	script.Parent.Handle.Rotation = originalRotation
+end
+
+function Activated()
+	if not swinging then
+		swinging = true
+		local player = game.Players:GetPlayerFromCharacter(Myhuman.Parent)
+		if player then
+			TiltHandle() 
+			wait(0.5)     
+		end
+		swinging = false
+	end
+end
+
+function hit(part)
+	if part and swinging then
+		local player = game.Players:GetPlayerFromCharacter(Myhuman.Parent)
+		if player then
+			if part:IsDescendantOf(game.Workspace.trees) then
+				game.ReplicatedStorage.takedamage:FireClient(player, part)
+			elseif part:IsDescendantOf(game.Workspace.training) then
+				game.ReplicatedStorage.Train:FireClient(player, part)
+			end
+		end
+	end
+end
+
+script.Parent.Equipped:Connect(Equipped)
+script.Parent.Activated:Connect(Activated)
+script.Parent.Handle.Touched:Connect(hit)
